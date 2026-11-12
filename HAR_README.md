@@ -10,7 +10,8 @@ A HAR is one big JSON document, and response bodies are usually **base64-encoded
 and JSON is **minified**. Raw reads and raw `grep` are useless on it and flood the
 model's context. `harscope` instead:
 
-1. **`load_har`** — parses once, decodes base64 bodies, returns a compact profile
+1. **`load_har`** — parses once, decodes base64 bodies and decompresses gzip /
+   deflate / brotli (`Content-Encoding`) bodies, returns a compact profile
    (hosts / methods / statuses / mime types / time span) plus a **CTF artifact
    scan** (flag matches, JWTs, Set-Cookies, base64 blobs).
 2. **Structured, bounded queries** against the index — you never pull the whole file.

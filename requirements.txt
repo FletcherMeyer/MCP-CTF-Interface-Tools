@@ -1,1 +1,6 @@
 mcp>=1.2.0
+
+# Optional: enables harscope to decode brotli (Content-Encoding: br) response
+# bodies. gzip and deflate work without it (Python standard library). If brotli
+# can't be installed, brotli bodies simply stay undecoded; everything else works.
+brotli>=1.1.0

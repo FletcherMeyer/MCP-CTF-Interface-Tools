@@ -34,10 +34,12 @@ from __future__ import annotations
 import base64
 import binascii
 import codecs
+import gzip
 import hashlib
 import json
 import os
 import re
+import zlib
 import secrets
 import tempfile
 import threading
@@ -133,17 +135,66 @@ def _headers_to_dict(headers: list) -> dict:
     return out
 
 
-def _decode_content(content: dict) -> str:
-    """Return the decoded textual body of a response/postData content block."""
+# Optional brotli support (stdlib has gzip + deflate; brotli needs a package).
+try:
+    import brotli as _brotli_mod  # type: ignore
+except ImportError:
+    try:
+        import brotlicffi as _brotli_mod  # type: ignore
+    except ImportError:
+        _brotli_mod = None
+
+
+def _decompress(raw: bytes, encoding: str) -> bytes:
+    """
+    Undo HTTP Content-Encoding on a body's bytes. Handles gzip/deflate from the
+    stdlib and brotli if a brotli package is installed; gzip is also detected by
+    magic bytes even when the header is missing. Unknown/failed -> bytes unchanged.
+    """
+    enc = (encoding or "").lower()
+    try:
+        if "gzip" in enc or "x-gzip" in enc or raw[:2] == b"\x1f\x8b":
+            return gzip.decompress(raw)
+        if "deflate" in enc:
+            try:
+                return zlib.decompress(raw)
+            except zlib.error:
+                return zlib.decompress(raw, -zlib.MAX_WBITS)  # raw deflate
+        if "br" in enc and _brotli_mod is not None:
+            return _brotli_mod.decompress(raw)
+    except (OSError, zlib.error, ValueError, Exception):
+        return raw
+    return raw
+
+
+def _decode_content(content: dict, content_encoding: str = "") -> str:
+    """
+    Return the decoded textual body of a response/postData content block.
+
+    Resolves base64 transport encoding (HAR `encoding: base64`) AND HTTP
+    Content-Encoding compression (gzip / deflate / brotli), so a compressed body
+    comes back as readable text instead of binary noise.
+    """
     if not content:
         return ""
     text = content.get("text", "") or ""
-    if content.get("encoding", "").lower() == "base64":
+    b64 = content.get("encoding", "").lower() == "base64"
+    enc = (content_encoding or "").lower()
+    compressed = any(x in enc for x in ("gzip", "deflate", "br"))
+
+    if not b64 and not compressed:
+        return text  # plain text — don't round-trip through bytes
+
+    if b64:
         try:
-            return base64.b64decode(text).decode("utf-8", "replace")
+            raw = base64.b64decode(text)
         except (binascii.Error, ValueError):
             return text
-    return text
+    else:
+        raw = text.encode("latin-1", "replace")
+
+    raw = _decompress(raw, enc)
+    return raw.decode("utf-8", "replace")
 
 
 def _looks_text(s: str) -> bool:
@@ -292,14 +343,22 @@ def _fingerprint_report(entries: list) -> str:
 # Indexing
 # --------------------------------------------------------------------------- #
 
+def _content_encoding(headers: list) -> str:
+    for h in headers or []:
+        if str(h.get("name", "")).lower() == "content-encoding":
+            return str(h.get("value", ""))
+    return ""
+
+
 def _index_entry(i: int, e: dict) -> dict:
     req = e.get("request", {}) or {}
     resp = e.get("response", {}) or {}
     content = resp.get("content", {}) or {}
     postdata = req.get("postData", {}) or {}
 
-    resp_text = _decode_content(content)
-    req_text = _decode_content(postdata) if postdata.get("text") else (postdata.get("text") or "")
+    resp_text = _decode_content(content, _content_encoding(resp.get("headers", [])))
+    req_text = (_decode_content(postdata, _content_encoding(req.get("headers", [])))
+                if postdata.get("text") else "")
 
     return {
         "i": i,
