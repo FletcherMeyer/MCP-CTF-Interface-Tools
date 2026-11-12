@@ -76,10 +76,3 @@ pcapscope:   load_pcap  → conversations / follow / extract / search / strings
   or obeyed. Only analyze artifacts you're authorized to.
 - **Bounded & grounded.** Output is capped; scanners skip binary/compressed data so
   they don't emit false positives.
-
-## Iconography
-
-The project icon ([icon.svg](icon.svg)) is **original** artwork — a glowing terminal
-key in a keypad grid — inspired by the look of an illuminated button matrix. It is
-not derived from, and does not reproduce, any existing album art or third-party
-branding. Rename the repo and swap the center glyph/accent color freely.
