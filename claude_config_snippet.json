@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "logsandbox": {
+      "command": "python",
+      "args": ["C:\\path\\to\\server.py"],
+      "env": {
+        "LOGSANDBOX_DIR": "$HOME/.claude-logsandbox",
+        "LOGSANDBOX_TIMEOUT": "30",
+        "LOGSANDBOX_MAX_LINES": "400",
+        "LOGSANDBOX_MAX_BYTES": "60000"
+      }
+    }
+  }
+}

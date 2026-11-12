@@ -1,0 +1,56 @@
+#harscope-panel {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  width: 320px;
+  max-height: 50vh;
+  display: flex;
+  flex-direction: column;
+  background: #1e1e24;
+  color: #eaeaea;
+  border: 1px solid #3a3a44;
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, .35);
+  font: 12px/1.45 system-ui, -apple-system, sans-serif;
+  z-index: 2147483647;
+  overflow: hidden;
+}
+#harscope-panel.hs-min { max-height: 34px; }
+#harscope-panel.hs-min #hs-body { display: none; }
+
+#hs-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px;
+  background: #2a2a33;
+  cursor: move;
+  user-select: none;
+}
+#hs-title { font-weight: 600; letter-spacing: .3px; }
+#hs-title::before { content: "\25C9"; color: #5a9cff; margin-right: 6px; }
+#hs-actions button {
+  background: #3a3a46;
+  color: #eaeaea;
+  border: 0;
+  border-radius: 5px;
+  padding: 2px 8px;
+  margin-left: 4px;
+  font-size: 11px;
+  cursor: pointer;
+}
+#hs-actions button:hover { background: #4a4a58; }
+
+#hs-body { padding: 8px 10px; overflow-y: auto; }
+#hs-empty { color: #8a8a96; font-style: italic; }
+
+.hs-msg {
+  padding: 7px 9px;
+  margin: 6px 0;
+  border-radius: 7px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.hs-answer { background: #26303f; border-left: 3px solid #5a9cff; }
+.hs-request { background: #3a2f22; border-left: 3px solid #e0a53a; }
+.hs-system { background: #2a2a33; color: #9aa; font-size: 11px; }

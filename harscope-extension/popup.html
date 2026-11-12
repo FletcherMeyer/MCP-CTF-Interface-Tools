@@ -1,0 +1,48 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font: 13px system-ui, sans-serif; width: 300px; margin: 0; padding: 12px; color: #1a1a1a; background: #fff; }
+    h1 { font-size: 14px; margin: 0 0 10px; }
+    label { display: block; font-size: 11px; color: #555; margin: 8px 0 2px; }
+    input { width: 100%; box-sizing: border-box; padding: 6px; border: 1px solid #ccc; border-radius: 6px; font-size: 12px; }
+    .row { display: flex; gap: 6px; margin-top: 10px; }
+    button { flex: 1; padding: 7px; border: 0; border-radius: 6px; font-size: 12px; cursor: pointer; background: #eee; }
+    button.primary { background: #2d6cdf; color: #fff; }
+    button.danger { background: #c0392b; color: #fff; }
+    button:disabled { opacity: .5; cursor: default; }
+    #status { margin-top: 10px; font-size: 11px; color: #555; min-height: 16px; }
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #bbb; margin-right: 4px; vertical-align: middle; }
+    .dot.on { background: #27ae60; } .dot.rec { background: #c0392b; }
+    details { margin-top: 10px; } summary { font-size: 11px; color: #777; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>harscope capture</h1>
+
+  <details id="cfg">
+    <summary>Bridge connection</summary>
+    <label>Bridge URL (from the AI's bridge_status)</label>
+    <input id="url" placeholder="http://127.0.0.1:7331">
+    <label>Token</label>
+    <input id="token" placeholder="paste token">
+    <div class="row">
+      <button id="save">Save</button>
+      <button id="test">Test</button>
+    </div>
+  </details>
+
+  <div class="row">
+    <button id="start" class="primary">Start capture</button>
+    <button id="stop" class="danger" disabled>Stop</button>
+  </div>
+  <div class="row">
+    <button id="send" class="primary">Send capture to AI</button>
+  </div>
+
+  <div id="status"><span class="dot" id="dot"></span><span id="msg">Loading…</span></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

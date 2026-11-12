@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Log and capture toolkit icon">
+  <title>Log and Capture MCP Toolkit</title>
+  <defs>
+    <!-- backdrop -->
+    <radialGradient id="bg" cx="50%" cy="46%" r="70%">
+      <stop offset="0%" stop-color="#0d1218"/>
+      <stop offset="100%" stop-color="#05070a"/>
+    </radialGradient>
+    <!-- normal key face -->
+    <linearGradient id="key" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#202e38"/>
+      <stop offset="42%" stop-color="#121a22"/>
+      <stop offset="100%" stop-color="#080c10"/>
+    </linearGradient>
+    <!-- lit center key face -->
+    <radialGradient id="litKey" cx="50%" cy="42%" r="75%">
+      <stop offset="0%" stop-color="#2bd6e6"/>
+      <stop offset="45%" stop-color="#0f8aa0"/>
+      <stop offset="100%" stop-color="#05333e"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#36e3f0" stop-opacity="0.95"/>
+      <stop offset="55%" stop-color="#17a7bd" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#17a7bd" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="soft" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
+    <filter id="glint" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="5"/>
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+
+  <!-- ambient glow behind the lit key -->
+  <circle cx="256" cy="256" r="150" fill="url(#glow)" filter="url(#soft)"/>
+
+  <!-- 3x3 key grid: cell 120, gap 20, margin 56 -->
+  <g>
+    <!-- row 1 -->
+    <rect x="56"  y="56"  width="120" height="120" rx="30" fill="url(#key)" stroke="#2a3a46" stroke-width="1.5"/>
+    <rect x="196" y="56"  width="120" height="120" rx="30" fill="url(#key)" stroke="#2a3a46" stroke-width="1.5"/>
+    <rect x="336" y="56"  width="120" height="120" rx="30" fill="url(#key)" stroke="#2a3a46" stroke-width="1.5"/>
+    <!-- row 2 -->
+    <rect x="56"  y="196" width="120" height="120" rx="30" fill="url(#key)" stroke="#2a3a46" stroke-width="1.5"/>
+    <rect x="336" y="196" width="120" height="120" rx="30" fill="url(#key)" stroke="#2a3a46" stroke-width="1.5"/>
+    <!-- row 3 -->
+    <rect x="56"  y="336" width="120" height="120" rx="30" fill="url(#key)" stroke="#2a3a46" stroke-width="1.5"/>
+    <rect x="196" y="336" width="120" height="120" rx="30" fill="url(#key)" stroke="#2a3a46" stroke-width="1.5"/>
+    <rect x="336" y="336" width="120" height="120" rx="30" fill="url(#key)" stroke="#2a3a46" stroke-width="1.5"/>
+  </g>
+
+  <!-- corner specular glints (echo the glossy keypad look) -->
+  <g fill="#bfeaf2" opacity="0.5" filter="url(#glint)">
+    <ellipse cx="86"  cy="86"  rx="10" ry="6"/>
+    <ellipse cx="366" cy="86"  rx="10" ry="6"/>
+    <ellipse cx="86"  cy="366" rx="10" ry="6"/>
+    <ellipse cx="426" cy="366" rx="9"  ry="5"/>
+  </g>
+
+  <!-- the lit center key -->
+  <rect x="196" y="196" width="120" height="120" rx="30" fill="url(#litKey)" stroke="#5ff0ff" stroke-width="2.5"/>
+  <rect x="196" y="196" width="120" height="120" rx="30" fill="none" stroke="#9ff6ff" stroke-width="1" opacity="0.5"/>
+  <!-- specular highlight on the lit key -->
+  <ellipse cx="236" cy="222" rx="30" ry="14" fill="#eafeff" opacity="0.35" filter="url(#glint)"/>
+
+  <!-- prompt glyph ">_" drawn as paths (font-independent) -->
+  <g stroke="#04252c" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <polyline points="240,238 262,256 240,274"/>
+    <line x1="268" y1="282" x2="288" y2="282"/>
+  </g>
+</svg>
