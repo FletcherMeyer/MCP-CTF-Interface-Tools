@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="screenscope icon">
+  <title>screenscope</title>
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="46%" r="70%">
+      <stop offset="0%" stop-color="#140a1f"/><stop offset="100%" stop-color="#07040c"/>
+    </radialGradient>
+    <linearGradient id="key" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#241830"/><stop offset="42%" stop-color="#160f22"/><stop offset="100%" stop-color="#0a0712"/>
+    </linearGradient>
+    <radialGradient id="litKey" cx="50%" cy="42%" r="75%">
+      <stop offset="0%" stop-color="#c77dff"/><stop offset="45%" stop-color="#8b3df0"/><stop offset="100%" stop-color="#2a1250"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#c77dff" stop-opacity="0.9"/>
+      <stop offset="55%" stop-color="#8b3df0" stop-opacity="0.32"/>
+      <stop offset="100%" stop-color="#8b3df0" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="soft" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="10"/></filter>
+    <filter id="glint" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="5"/></filter>
+  </defs>
+
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="150" fill="url(#glow)" filter="url(#soft)"/>
+
+  <g>
+    <rect x="56"  y="56"  width="120" height="120" rx="30" fill="url(#key)" stroke="#33234a" stroke-width="1.5"/>
+    <rect x="196" y="56"  width="120" height="120" rx="30" fill="url(#key)" stroke="#33234a" stroke-width="1.5"/>
+    <rect x="336" y="56"  width="120" height="120" rx="30" fill="url(#key)" stroke="#33234a" stroke-width="1.5"/>
+    <rect x="56"  y="196" width="120" height="120" rx="30" fill="url(#key)" stroke="#33234a" stroke-width="1.5"/>
+    <rect x="336" y="196" width="120" height="120" rx="30" fill="url(#key)" stroke="#33234a" stroke-width="1.5"/>
+    <rect x="56"  y="336" width="120" height="120" rx="30" fill="url(#key)" stroke="#33234a" stroke-width="1.5"/>
+    <rect x="196" y="336" width="120" height="120" rx="30" fill="url(#key)" stroke="#33234a" stroke-width="1.5"/>
+    <rect x="336" y="336" width="120" height="120" rx="30" fill="url(#key)" stroke="#33234a" stroke-width="1.5"/>
+  </g>
+
+  <g fill="#e7cdfa" opacity="0.5" filter="url(#glint)">
+    <ellipse cx="86" cy="86" rx="10" ry="6"/><ellipse cx="366" cy="86" rx="10" ry="6"/>
+    <ellipse cx="86" cy="366" rx="10" ry="6"/><ellipse cx="426" cy="366" rx="9" ry="5"/>
+  </g>
+
+  <rect x="196" y="196" width="120" height="120" rx="30" fill="url(#litKey)" stroke="#d9a7ff" stroke-width="2.5"/>
+  <rect x="196" y="196" width="120" height="120" rx="30" fill="none" stroke="#ecd4ff" stroke-width="1" opacity="0.5"/>
+  <ellipse cx="236" cy="222" rx="30" ry="14" fill="#f7ecff" opacity="0.32" filter="url(#glint)"/>
+
+  <!-- viewfinder glyph: corner brackets + center dot -->
+  <g stroke="#1a0b2e" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M226 236 v-10 h10"/><path d="M286 236 v-10 h-10"/>
+    <path d="M226 276 v10 h10"/><path d="M286 276 v10 h-10"/>
+  </g>
+  <circle cx="256" cy="256" r="8" fill="#1a0b2e"/>
+</svg>

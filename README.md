@@ -5,13 +5,13 @@
 <h1 align="center">Log &amp; Capture MCP Toolkit</h1>
 
 <p align="center">
-Three MCP servers that let an AI <b>interpret big or binary artifacts through tooling</b>
-— never by reading them raw into context.
+Four MCP servers that let an AI <b>interpret big, binary, or on-screen content through tooling</b>
+— never by reading it raw into context.
 </p>
 
 ---
 
-These are **three separate, independently-runnable MCP servers**, bundled in one
+These are **four separate, independently-runnable MCP servers**, bundled in one
 repo. They share one philosophy:
 
 - **Don't read the artifact raw.** Load/index it once, then run **bounded** queries.
@@ -26,10 +26,11 @@ repo. They share one philosophy:
 | **logsandbox** | Huge **log files** | a WSL sandbox (grep/awk/sed on a copy) | [LOG_README.md](LOG_README.md) |
 | **harscope** | **HAR** (HTTP Archive) files, CTF-oriented | pure Python (decodes bodies, JWTs, base64) | [HAR_README.md](HAR_README.md) |
 | **pcapscope** | **PCAP/PCAPNG** packet captures | pure Python (dissects + follows streams) | [PCAP_README.md](PCAP_README.md) |
+| **screenscope** | a **screen region** (web VM console / terminal) | its browser extension streams cropped frames; the AI reads them | [SCREEN_README.md](SCREEN_README.md) |
 
-**harscope** also ships a Chrome/Edge extension ([harscope-extension/](harscope-extension))
-that captures a tab's traffic and sends it to a running session via a localhost
-bridge — see [harscope-extension/README.md](harscope-extension/README.md).
+Two Chrome/Edge extensions ship alongside, each streaming to a localhost bridge:
+- **[harscope-extension/](harscope-extension)** — captures a tab's HTTP traffic as a HAR ([docs](harscope-extension/README.md)).
+- **[screenscope-extension/](screenscope-extension)** — frames a region of a web VM console and streams the image ~1×/sec for the AI to read ([docs](screenscope-extension/README.md)).
 
 ## Requirements
 
@@ -57,14 +58,19 @@ claude mcp add harscope -- python C:\path\to\har_server.py
 claude mcp add pcapscope -- python C:\path\to\pcap_server.py
 ```
 
+```bash
+claude mcp add screenscope -- python C:\path\to\screen_server.py
+```
+
 (Or add equivalent entries to your MCP config — see `claude_config_snippet.json`.)
 
 ## At a glance
 
 ```
-logsandbox:  deploy_log → search / top / timeline / pipeline   (your patterns)
-harscope:    load_har   → scan / find_flags / extract / decode  (your patterns)
-pcapscope:   load_pcap  → conversations / follow / extract / search / strings
+logsandbox:   deploy_log → search / top / timeline / pipeline   (your patterns)
+harscope:     load_har   → scan / find_flags / extract / decode  (your patterns)
+pcapscope:    load_pcap  → conversations / follow / extract / search / strings
+screenscope:  bridge_status → read_screen (image) / say / ask    (live screen region)
 ```
 
 ## Security
