@@ -25,6 +25,8 @@
 #ss-ack { color: #7c6b90; font: 600 10px ui-monospace, Consolas, monospace; margin-left: 2px; }
 #ss-ack.ss-flash { color: #35e06a; animation: ssAck .55s ease-out; }
 @keyframes ssAck { from { text-shadow: 0 0 10px #35e06a; } to { text-shadow: none; } }
+#ss-bar-send { color: #190a2e !important; border-color: #c77dff !important; background: #a855f7 !important; box-shadow: 0 0 8px rgba(168,85,247,.5); }
+#ss-bar-send:hover { box-shadow: 0 0 13px rgba(168,85,247,.75); }
 #ss-bar button {
   color: #e9d5ff; background: #2a1b40; border: 1px solid #4a3568; border-radius: 6px;
   padding: 1px 7px; font: 600 11px ui-monospace, Consolas, monospace; cursor: pointer;

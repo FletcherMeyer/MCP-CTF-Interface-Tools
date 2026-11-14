@@ -15,6 +15,7 @@
     '<div id="ss-bar">' +
       '<span id="ss-bar-title">▣ screenscope · capture region</span>' +
       '<span id="ss-ack" title="frames acknowledged by the AI bridge"></span>' +
+      '<button id="ss-bar-send" title="Send this frame to the AI">send</button>' +
       '<button id="ss-bar-min" title="minimize / expand">—</button>' +
       '<button id="ss-bar-close" title="close (reopen from the toolbar icon)">×</button>' +
     '</div>' +
@@ -123,8 +124,17 @@
   box.querySelector("#ss-bar-close").addEventListener("click", (e) => {
     e.stopPropagation();
     box.style.display = "none";
-    setPaused(true);  // a hidden box must not keep streaming
     try { chrome.storage.local.set({ ssBoxHidden: true }); } catch (err) {}
+  });
+  // Send the framed region to the AI (manual, one frame per click)
+  box.querySelector("#ss-bar-send").addEventListener("click", (e) => {
+    e.stopPropagation();
+    const a = box.querySelector("#ss-ack");
+    if (a) a.textContent = "sending…";
+    chrome.runtime.sendMessage({ cmd: "sendActive" }, (r) => {
+      if (!(r && r.ok) && a) { a.textContent = "✗ " + ((r && r.error) || "failed"); }
+      // on success the background sends an "ack" message that updates the count
+    });
   });
   panel.querySelector("#ssp-close").addEventListener("click", (e) => {
     e.stopPropagation();

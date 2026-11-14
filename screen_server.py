@@ -35,27 +35,24 @@ MAX_CHARS = int(os.environ.get("SCREENSCOPE_MAX_CHARS", "8000"))
 BRIDGE_START_PORT = int(os.environ.get("SCREENSCOPE_BRIDGE_PORT", "7333"))
 
 INSTRUCTIONS = """\
-screenscope lets you watch a region of the user's screen (a web VM console or
-terminal) that they framed with the screenscope extension's capture box. The
-extension streams the cropped image ~1x/sec to a localhost bridge; nothing leaves
-the machine.
+screenscope lets you read a region of the user's screen (a web VM console or
+terminal) that they framed with the screenscope extension's capture box. Capture is
+MANUAL: the user clicks "Send frame" to push the current frame to a localhost
+bridge; nothing is streamed automatically and nothing leaves the machine.
 
 Workflow:
   1. bridge_status()   -> give the user the URL + token to paste into the extension.
-  2. watch_screen()    -> the async way to follow a live stream: it BLOCKS until the
-                          next new frame arrives and returns it as an image. Call it
-                          in a loop — it waits server-side, so it's efficient. It
-                          returns "STREAM ENDED" when the user clicks Stop in the
-                          extension; when you see that, stop looping.
-     read_screen()     -> non-blocking: returns the latest frame right now (for a
-                          one-off look rather than following).
+  2. watch_screen()    -> async wait: it BLOCKS until the user clicks Send frame, then
+                          returns that frame as an image. Await it like an async call.
+                          It returns "no frame sent yet" on timeout (call it again to
+                          keep awaiting), and "SESSION ENDED" when the user clicks End.
+     read_screen()     -> non-blocking: returns the most recently sent frame, if any.
   3. say(text)         -> show an update in the extension's bottom-right panel.
      ask(text)         -> ask the user to do something on the console.
 
-The frame is a picture — read the text off it yourself. Each frame the extension
-sends is ACKed synchronously by the bridge (the extension shows the user a live
-"sent" count), so if the user says nothing is being ACKed, frames aren't leaving
-the extension — have them reload the console page and click Start.
+The frame is a picture — read the text off it yourself. Each Send is ACKed by the
+bridge (the extension shows the user a live "sent" count). Capture is on-demand, so
+await the user's Send rather than polling — call watch_screen and let it block.
 """
 
 mcp = FastMCP("screenscope", instructions=INSTRUCTIONS)
@@ -230,19 +227,20 @@ def read_screen():
 
 
 @mcp.tool()
-def watch_screen(timeout_seconds: int = 45):
+def watch_screen(timeout_seconds: int = 55):
     """
-    Block until the NEXT new frame arrives, then return it as an image — an async
-    long-poll for live monitoring. Call it repeatedly in a loop: each call waits
-    server-side for a fresh frame instead of busy-polling, so it's efficient and
-    near-real-time. It returns one of:
-      • the next frame (image) when one arrives — read the console off it;
-      • "STREAM ENDED ..." when the user clicks Stop in the extension — STOP looping;
-      • "still streaming, no change ..." if nothing new within the timeout — loop again.
+    Async wait for the user to SEND a frame. Capture is MANUAL — this BLOCKS until
+    the user clicks "Send frame" in the screenscope extension, then returns that
+    frame as an image. Await it like an async function; it returns the moment a
+    frame is pushed. It returns one of:
+      • the sent frame (image) — read the console/terminal off it and interpret it;
+      • "SESSION ENDED ..." when the user clicks End in the extension — stop awaiting;
+      • "no frame sent yet ..." if the user hasn't clicked Send within the timeout —
+        call watch_screen again to keep awaiting (this is waiting, not auto-pulling).
 
     Args:
-        timeout_seconds: how long to wait for a new frame before returning the
-                         no-change note (clamped to 5..55s).
+        timeout_seconds: how long to wait for a Send before returning the
+                         still-waiting note (clamped to 5..55s).
     """
     global _last_watch_seq
     if not _BRIDGE["port"]:
@@ -252,22 +250,19 @@ def watch_screen(timeout_seconds: int = 45):
     with _BRIDGE["cond"]:
         while True:
             fr = _BRIDGE["frame"]
-            streaming = _BRIDGE["streaming"]
+            active = _BRIDGE["streaming"]
             if fr and fr["seq"] > _last_watch_seq:
                 _last_watch_seq = fr["seq"]
                 age = time.time() - fr["ts"]
-                return [f"frame #{fr['seq']}, {age:.1f}s old:",
+                return [f"frame #{fr['seq']} (user clicked Send, {age:.1f}s ago):",
                         Image(data=fr["img"], format=fr["fmt"])]
-            if not streaming:
-                if fr is not None:
-                    return ("STREAM ENDED — the user stopped the capture in the "
-                            "extension. Stop looping / watching.")
-                return ("No stream yet — ask the user to frame the console and click "
-                        "Start in the screenscope extension, then call watch_screen again.")
+            if not active and fr is not None:
+                return ("SESSION ENDED — the user clicked End in the extension. "
+                        "Stop awaiting frames.")
             remaining = deadline - time.time()
             if remaining <= 0:
-                return (f"still streaming, no change in {timeout}s (console idle). "
-                        "Call watch_screen again to keep following.")
+                return ("no frame sent yet — the user hasn't clicked Send frame. "
+                        "Call watch_screen again to keep awaiting their next Send.")
             _BRIDGE["cond"].wait(remaining)
 
 

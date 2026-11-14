@@ -14,16 +14,6 @@ function send(cmd, extra = {}) {
 }
 async function getCfg() { return chrome.storage.local.get(["bridgeUrl", "bridgeToken"]); }
 
-async function refresh() {
-  const s = await send("status");
-  if (s && s.recording) {
-    setStatus("Reading — streaming the framed region ~1×/sec", "rec");
-    $("start").disabled = true; $("stop").disabled = false;
-  } else {
-    setStatus("", ""); $("start").disabled = false; $("stop").disabled = true;
-  }
-}
-
 document.addEventListener("DOMContentLoaded", async () => {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   TAB = tab ? tab.id : null;
@@ -31,12 +21,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("url").value = cfg.bridgeUrl || "";
   $("token").value = cfg.bridgeToken || "";
   if (!cfg.bridgeUrl || !cfg.bridgeToken) $("cfg").open = true;
-  // clicking the toolbar icon re-opens the on-page tools if they were closed
+  // re-open the on-page tools if they were closed
   if (TAB != null) {
     chrome.storage.local.set({ ssBoxHidden: false, ssPanelHidden: false });
     try { chrome.tabs.sendMessage(TAB, { cmd: "showTools" }, () => void chrome.runtime.lastError); } catch (e) { /* ignore */ }
   }
-  refresh();
+  const s = await send("status");
+  if (s && s.sent) setStatus(s.sent + " frame(s) sent this session", "on");
 });
 
 $("save").onclick = async () => {
@@ -50,16 +41,19 @@ $("test").onclick = async () => {
   if (r && r.ok) setStatus("Connected to " + (r.service || "bridge") + (r.hasToken ? "" : " (no token!)"), "on");
   else setStatus("Not reachable: " + (r ? r.error : "?"), "err");
 };
-$("start").onclick = async () => {
+$("send").onclick = async () => {
   const cfg = await getCfg();
   if (!cfg.bridgeUrl || !cfg.bridgeToken) {
     $("cfg").open = true;
     setStatus("No bridge configured — set URL + token under “bridge connection”.", "err");
     return;
   }
-  const r = await send("start");
-  if (r && r.ok) refresh();
-  else setStatus("Couldn’t start: " + ((r && r.error) || "unknown error")
-                 + (r && /capture box/.test(r.error || "") ? " — open the page and position the frame." : ""), "err");
+  setStatus("Sending…", "on");
+  const r = await send("sendFrame");
+  if (r && r.ok) setStatus("✓ Sent frame #" + r.seq + " (" + r.sent + " this session)", "on");
+  else setStatus("Send failed: " + ((r && r.error) || "?"), "err");
 };
-$("stop").onclick = async () => { await send("stop"); refresh(); };
+$("end").onclick = async () => {
+  await send("end");
+  setStatus("Session ended — the AI will stop awaiting.", "on");
+};

@@ -25,14 +25,15 @@ bridge). No capture data leaves your machine.
 2. Click the extension icon → **bridge connection** → paste URL + token → **Save** →
    **Test** (should say "Connected").
 3. Drag the **purple frame** over the console text, resize it with the corner handle.
-4. Click **Start reading**. The framed region streams ~1×/sec (only when it changes).
-   A red **REC** badge shows on the icon, and the capture-box bar shows a live
-   **✓ sent N** ACK each time a frame is accepted by the bridge — so you can see data
-   is flowing.
+4. Click **Send frame** — in the popup, or the **send** button on the box itself —
+   each time you want the AI to read the current frame. Capture is **manual**: one
+   frame per click, nothing is streamed automatically. The box bar shows a live
+   **✓ sent N** ACK each time the bridge accepts a frame, and the AI's
+   `watch_screen` call is blocked waiting for exactly that Send.
 5. Watch the bottom-right panel for the AI's readings; drag either box anywhere,
-   minimize with **—**.
-6. Click **Stop** to **end the stream** — this tells the AI side the stream is over
-   (a blocked `watch_screen` returns `STREAM ENDED`).
+   minimize with **—**, close with **×** (reopen by clicking the toolbar icon).
+6. Click **End session** when you're done — a blocked `watch_screen` then returns
+   `SESSION ENDED` so the AI stops awaiting.
 
 ## Notes & limits
 
@@ -40,12 +41,11 @@ bridge). No capture data leaves your machine.
   the browser tab — so the console must be shown in a tab (noVNC/Proxmox, vSphere
   web console, cloud serial console, a browser terminal…). Native windows outside
   the browser aren't capturable.
-- **Keep the tab focused.** Only the active, visible tab can be captured; switching
-  tabs pauses the stream.
-- **Errors surface in the popup.** If you Start with no bridge configured (or the
-  box isn't on the page yet), a red indicator in the bottom-left says why.
-- **Throttled & deduped.** Frames go at ~1×/sec and identical frames are skipped, so
-  an idle console doesn't spam the bridge.
+- **Send from the focused tab.** Only the active, visible tab can be captured.
+- **Errors surface in the popup.** If you Send with no bridge configured (or the box
+  isn't on the page yet), a red indicator in the bottom-left says why.
+- **Manual = you control the cadence.** One frame per click, so you decide exactly
+  what the AI sees and when.
 
 ## Files
 
