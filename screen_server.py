@@ -43,9 +43,13 @@ bridge; nothing is streamed automatically and nothing leaves the machine.
 Workflow:
   1. bridge_status()   -> give the user the URL + token to paste into the extension.
   2. watch_screen()    -> async wait: it BLOCKS until the user clicks Send frame, then
-                          returns that frame as an image. Await it like an async call.
-                          It returns "no frame sent yet" on timeout (call it again to
-                          keep awaiting), and "SESSION ENDED" when the user clicks End.
+                          returns that frame as an image. This is a CONTINUOUS session:
+                          after you read and report each frame, call watch_screen AGAIN
+                          to await the next Send, and keep repeating. The tool drives
+                          this loop — the user should NOT have to re-ask. It returns
+                          "no frame sent yet" on timeout (call it again to keep
+                          awaiting) and "SESSION ENDED" when the user clicks End, which
+                          is the only signal to stop looping.
      read_screen()     -> non-blocking: returns the most recently sent frame, if any.
   3. say(text)         -> show an update in the extension's bottom-right panel.
      ask(text)         -> ask the user to do something on the console.
@@ -254,7 +258,10 @@ def watch_screen(timeout_seconds: int = 55):
             if fr and fr["seq"] > _last_watch_seq:
                 _last_watch_seq = fr["seq"]
                 age = time.time() - fr["ts"]
-                return [f"frame #{fr['seq']} (user clicked Send, {age:.1f}s ago):",
+                return [f"frame #{fr['seq']} (user clicked Send, {age:.1f}s ago). "
+                        "After you read and report this frame, call watch_screen() "
+                        "AGAIN to await the next Send — keep repeating until it "
+                        "returns SESSION ENDED.",
                         Image(data=fr["img"], format=fr["fmt"])]
             if not active and fr is not None:
                 return ("SESSION ENDED — the user clicked End in the extension. "

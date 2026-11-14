@@ -124,7 +124,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       } else if (msg.cmd === "sendActive") {           // from the box's own Send button
         sendResponse(await sendFrame(senderTab));
       } else if (msg.cmd === "end") {
-        sendResponse(await endSession(msg.tabId));
+        sendResponse(await endSession(senderTab));
       } else {
         sendResponse({ ok: false, error: "unknown command" });
       }
