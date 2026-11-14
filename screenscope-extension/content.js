@@ -15,6 +15,7 @@
     '<div id="ss-bar">' +
       '<span id="ss-bar-title">▣ screenscope · capture region</span>' +
       '<button id="ss-bar-min" title="minimize / expand">—</button>' +
+      '<button id="ss-bar-close" title="close (reopen from the toolbar icon)">×</button>' +
     '</div>' +
     '<div id="ss-resize" title="drag to resize"></div>';
   document.documentElement.appendChild(box);
@@ -78,7 +79,8 @@
   panel.classList.add("ss-min");
   panel.innerHTML =
     '<div id="ssp-head"><span id="ssp-title">screenscope</span>' +
-      '<button id="ssp-toggle" title="minimize / expand">—</button></div>' +
+      '<span><button id="ssp-toggle" title="minimize / expand">—</button>' +
+      '<button id="ssp-close" title="close (reopen from the toolbar icon)">×</button></span></div>' +
     '<div id="ssp-body"><div id="ssp-empty">Readings from the AI appear here.</div></div>';
   document.documentElement.appendChild(panel);
 
@@ -114,6 +116,34 @@
     pbody.scrollTop = pbody.scrollHeight;
     panel.classList.remove("ss-min");
   }
+
+  // ---------------- close / reopen ----------------
+  // × closes a tool; clicking the extension icon reopens both.
+  box.querySelector("#ss-bar-close").addEventListener("click", (e) => {
+    e.stopPropagation();
+    box.style.display = "none";
+    setPaused(true);  // a hidden box must not keep streaming
+    try { chrome.storage.local.set({ ssBoxHidden: true }); } catch (err) {}
+  });
+  panel.querySelector("#ssp-close").addEventListener("click", (e) => {
+    e.stopPropagation();
+    panel.style.display = "none";
+    try { chrome.storage.local.set({ ssPanelHidden: true }); } catch (err) {}
+  });
+  try {
+    chrome.storage.local.get(["ssBoxHidden", "ssPanelHidden"], (d) => {
+      if (d && d.ssBoxHidden) { box.style.display = "none"; setPaused(true); }
+      if (d && d.ssPanelHidden) panel.style.display = "none";
+    });
+  } catch (e) { /* ignore */ }
+  chrome.runtime.onMessage.addListener((msg) => {
+    if (msg && msg.cmd === "showTools") {
+      box.style.display = ""; panel.style.display = "";
+      try { chrome.storage.local.set({ ssBoxHidden: false, ssPanelHidden: false }); } catch (e) {}
+      setPaused(false);
+      reportRect();
+    }
+  });
 
   try {
     const port = chrome.runtime.connect({ name: "screenscope-panel" });

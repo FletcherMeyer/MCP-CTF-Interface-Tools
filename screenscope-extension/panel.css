@@ -60,6 +60,7 @@
   padding: 3px 9px; margin-left: 5px; font: 600 11px ui-monospace, Consolas, monospace; cursor: pointer;
 }
 #ssp-head button:hover { background: #3a2558; }
+#ss-bar-close:hover, #ssp-close:hover { color: #ff8a83; border-color: #7a2b28; background: #2a1614; }
 
 #ssp-body { padding: 9px 11px; overflow-y: auto; }
 #ssp-body::-webkit-scrollbar { width: 8px; }

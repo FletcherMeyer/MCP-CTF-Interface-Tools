@@ -31,6 +31,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("url").value = cfg.bridgeUrl || "";
   $("token").value = cfg.bridgeToken || "";
   if (!cfg.bridgeUrl || !cfg.bridgeToken) $("cfg").open = true;
+  // clicking the toolbar icon re-opens the on-page tools if they were closed
+  if (TAB != null) {
+    chrome.storage.local.set({ ssBoxHidden: false, ssPanelHidden: false });
+    try { chrome.tabs.sendMessage(TAB, { cmd: "showTools" }, () => void chrome.runtime.lastError); } catch (e) { /* ignore */ }
+  }
   refresh();
 });
 

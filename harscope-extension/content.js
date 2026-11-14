@@ -13,10 +13,31 @@
       '<span id="hs-actions">' +
         '<button id="hs-send" title="Send this tab\'s capture to the AI">send</button>' +
         '<button id="hs-toggle" title="minimize / expand">—</button>' +
+        '<button id="hs-close" title="close (reopen from the toolbar icon)">×</button>' +
       '</span>' +
     '</div>' +
-    '<div id="hs-body"><div id="hs-empty">Idle. Capture a tab from the toolbar, then answers appear here.</div></div>';
+    '<div id="hs-body"><div id="hs-empty">Capture a tab from the toolbar; answers appear here.</div></div>';
   (document.body || document.documentElement).appendChild(panel);
+
+  // start hidden if the user previously closed the overlay
+  try {
+    chrome.storage.local.get("uiHidden", (d) => { if (d && d.uiHidden) panel.style.display = "none"; });
+  } catch (e) { /* ignore */ }
+
+  // close out the panel (reopen by clicking the extension icon)
+  panel.querySelector("#hs-close").addEventListener("click", (e) => {
+    e.stopPropagation();
+    panel.style.display = "none";
+    try { chrome.storage.local.set({ uiHidden: true }); } catch (err) { /* ignore */ }
+  });
+
+  // the toolbar popup tells us to reopen
+  chrome.runtime.onMessage.addListener((msg) => {
+    if (msg && msg.cmd === "showTools") {
+      panel.style.display = "";
+      try { chrome.storage.local.set({ uiHidden: false }); } catch (e) { /* ignore */ }
+    }
+  });
 
   const head = panel.querySelector("#hs-head");
   const body = panel.querySelector("#hs-body");

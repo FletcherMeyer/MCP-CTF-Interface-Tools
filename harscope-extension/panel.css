@@ -47,6 +47,7 @@
   cursor: pointer;
 }
 #hs-actions button:hover { filter: brightness(1.25); }
+#hs-close:hover { color: #ff8a83; border-color: #7a2b28; filter: none; }
 #hs-actions #hs-send {
   color: #04252c;
   border-color: #5ff0ff;
