@@ -15,6 +15,19 @@ async function getConfig() {
   const d = await chrome.storage.local.get(["bridgeUrl", "bridgeToken"]);
   return { url: (d.bridgeUrl || "").replace(/\/+$/, ""), token: d.bridgeToken || "" };
 }
+
+// tell the bridge the stream started/ended (so watch_screen can end on Stop)
+async function postStream(active) {
+  const { url, token } = await getConfig();
+  if (!url || !token) return;
+  try {
+    await fetch(url + "/stream", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Screenscope-Token": token },
+      body: JSON.stringify({ active: !!active }),
+    });
+  } catch (e) { /* ignore */ }
+}
 function st(tabId) {
   if (!tabs.has(tabId)) tabs.set(tabId, { recording: false, rect: null, dpr: 1, paused: false, lastB64: "" });
   return tabs.get(tabId);
@@ -60,19 +73,30 @@ async function tick() {
   try { b64 = await cropToBase64(dataUrl, s.rect, s.dpr); } catch (e) { return; }
   if (b64 === s.lastB64) return;   // unchanged frame — don't resend
   s.lastB64 = b64;
+  let resp;
   try {
-    await fetch(cfg.url + "/frame", {
+    resp = await fetch(cfg.url + "/frame", {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Screenscope-Token": cfg.token },
       body: JSON.stringify({ img: b64, fmt: "jpeg" }),
     });
-  } catch (e) { /* bridge down — ignore this tick */ }
+  } catch (e) { return; }  // bridge down — ignore this tick
+  if (resp && resp.ok) {
+    // ACK: the bridge confirmed receipt — surface it to the user in the box bar
+    s.sent = (s.sent || 0) + 1;
+    let seq = 0;
+    try { seq = (await resp.json()).seq || 0; } catch (e) { /* ignore */ }
+    try { chrome.tabs.sendMessage(tabId, { cmd: "ack", seq, sent: s.sent }, () => void chrome.runtime.lastError); } catch (e) { /* ignore */ }
+  }
 }
 
 function startLoop(tabId) {
   recordingTab = tabId;
-  st(tabId).recording = true;
-  st(tabId).lastB64 = "";
+  const s = st(tabId);
+  s.recording = true;
+  s.lastB64 = "";
+  s.sent = 0;
+  postStream(true);
   if (!captureTimer) captureTimer = setInterval(tick, INTERVAL_MS);
   tick();
 }
@@ -80,6 +104,7 @@ function stopLoop(tabId) {
   if (tabs.has(tabId)) tabs.get(tabId).recording = false;
   if (recordingTab === tabId) recordingTab = null;
   if (captureTimer) { clearInterval(captureTimer); captureTimer = null; }
+  postStream(false);   // tell the bridge the stream ended -> watch_screen stops
   setBadge(tabId, "");
 }
 function setBadge(tabId, text) {

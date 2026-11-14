@@ -14,6 +14,7 @@
   box.innerHTML =
     '<div id="ss-bar">' +
       '<span id="ss-bar-title">▣ screenscope · capture region</span>' +
+      '<span id="ss-ack" title="frames acknowledged by the AI bridge"></span>' +
       '<button id="ss-bar-min" title="minimize / expand">—</button>' +
       '<button id="ss-bar-close" title="close (reopen from the toolbar icon)">×</button>' +
     '</div>' +
@@ -136,12 +137,20 @@
       if (d && d.ssPanelHidden) panel.style.display = "none";
     });
   } catch (e) { /* ignore */ }
+  const ack = box.querySelector("#ss-ack");
   chrome.runtime.onMessage.addListener((msg) => {
-    if (msg && msg.cmd === "showTools") {
+    if (!msg) return;
+    if (msg.cmd === "showTools") {
       box.style.display = ""; panel.style.display = "";
       try { chrome.storage.local.set({ ssBoxHidden: false, ssPanelHidden: false }); } catch (e) {}
       setPaused(false);
       reportRect();
+    } else if (msg.cmd === "ack") {
+      // the AI bridge acknowledged a frame — flash a live "sent" count
+      ack.textContent = "✓ sent " + msg.sent;
+      ack.classList.remove("ss-flash");
+      void ack.offsetWidth;        // restart the flash animation
+      ack.classList.add("ss-flash");
     }
   });
 

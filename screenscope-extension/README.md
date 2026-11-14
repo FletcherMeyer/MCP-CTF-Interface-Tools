@@ -26,9 +26,13 @@ bridge). No capture data leaves your machine.
    **Test** (should say "Connected").
 3. Drag the **purple frame** over the console text, resize it with the corner handle.
 4. Click **Start reading**. The framed region streams ~1×/sec (only when it changes).
-   A red **REC** badge shows on the icon.
+   A red **REC** badge shows on the icon, and the capture-box bar shows a live
+   **✓ sent N** ACK each time a frame is accepted by the bridge — so you can see data
+   is flowing.
 5. Watch the bottom-right panel for the AI's readings; drag either box anywhere,
    minimize with **—**.
+6. Click **Stop** to **end the stream** — this tells the AI side the stream is over
+   (a blocked `watch_screen` returns `STREAM ENDED`).
 
 ## Notes & limits
 

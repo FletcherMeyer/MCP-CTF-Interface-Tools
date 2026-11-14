@@ -41,15 +41,21 @@ extension streams the cropped image ~1x/sec to a localhost bridge; nothing leave
 the machine.
 
 Workflow:
-  1. bridge_status() -> give the user the URL + token to paste into the extension.
-  2. read_screen()   -> returns the LATEST captured frame as an image. Read the
-                        console text from it and interpret what's happening. Call
-                        it again (e.g. in a loop) to follow the screen live.
-  3. say(text)       -> show an update in the extension's bottom-right panel.
-     ask(text)       -> ask the user to do something on the console.
+  1. bridge_status()   -> give the user the URL + token to paste into the extension.
+  2. watch_screen()    -> the async way to follow a live stream: it BLOCKS until the
+                          next new frame arrives and returns it as an image. Call it
+                          in a loop — it waits server-side, so it's efficient. It
+                          returns "STREAM ENDED" when the user clicks Stop in the
+                          extension; when you see that, stop looping.
+     read_screen()     -> non-blocking: returns the latest frame right now (for a
+                          one-off look rather than following).
+  3. say(text)         -> show an update in the extension's bottom-right panel.
+     ask(text)         -> ask the user to do something on the console.
 
-The frame is a picture — read the text off it yourself. If frames aren't arriving,
-tell the user to position the box over the console and click Start in the extension.
+The frame is a picture — read the text off it yourself. Each frame the extension
+sends is ACKed synchronously by the bridge (the extension shows the user a live
+"sent" count), so if the user says nothing is being ACKed, frames aren't leaving
+the extension — have them reload the console page and click Start.
 """
 
 mcp = FastMCP("screenscope", instructions=INSTRUCTIONS)
@@ -60,8 +66,12 @@ _BRIDGE = {
     "frame": None,       # {"img": bytes, "fmt": str, "seq": int, "ts": float}
     "outgoing": [],      # messages AI -> extension panel
     "msg_id": 0,
+    "streaming": False,  # True while the extension is actively sending frames
     "lock": threading.Lock(),
 }
+# Condition (shares the lock) to wake watch_screen on a new frame or stream end.
+_BRIDGE["cond"] = threading.Condition(_BRIDGE["lock"])
+_last_watch_seq = 0  # highest frame seq already delivered to watch_screen
 
 
 class _Handler(BaseHTTPRequestHandler):
@@ -97,7 +107,15 @@ class _Handler(BaseHTTPRequestHandler):
         if self.path == "/ping":
             with _BRIDGE["lock"]:
                 have = _BRIDGE["frame"] is not None
-            return self._send(200, {"ok": True, "service": "screenscope-bridge", "frame": have})
+                streaming = _BRIDGE["streaming"]
+            return self._send(200, {"ok": True, "service": "screenscope-bridge",
+                                    "frame": have, "streaming": streaming})
+        if self.path == "/state":
+            with _BRIDGE["lock"]:
+                return self._send(200, {
+                    "streaming": _BRIDGE["streaming"],
+                    "seq": _BRIDGE["frame"]["seq"] if _BRIDGE["frame"] else 0,
+                })
         if self.path.startswith("/messages"):
             if not self._auth():
                 return self._send(401, {"error": "bad or missing token"})
@@ -112,22 +130,35 @@ class _Handler(BaseHTTPRequestHandler):
         return self._send(404, {"error": "not found"})
 
     def do_POST(self):
-        if self.path != "/frame":
-            return self._send(404, {"error": "not found"})
         if not self._auth():
             return self._send(401, {"error": "bad or missing token"})
-        try:
-            length = int(self.headers.get("Content-Length", "0"))
-            payload = json.loads(self.rfile.read(length))
-            raw = base64.b64decode(payload["img"])
-        except (ValueError, KeyError, OSError, binascii.Error):
-            return self._send(400, {"error": "bad frame payload"})
-        with _BRIDGE["lock"]:
-            _BRIDGE["msg_id"]  # noqa
-            seq = (_BRIDGE["frame"]["seq"] + 1) if _BRIDGE["frame"] else 1
-            _BRIDGE["frame"] = {"img": raw, "fmt": payload.get("fmt", "jpeg"),
-                                "seq": seq, "ts": time.time()}
-        return self._send(200, {"ok": True, "seq": seq})
+        if self.path == "/stream":
+            # extension marks the stream started/ended (Start / Stop buttons)
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                active = bool(json.loads(self.rfile.read(length)).get("active"))
+            except (ValueError, OSError):
+                return self._send(400, {"error": "bad payload"})
+            with _BRIDGE["cond"]:
+                _BRIDGE["streaming"] = active
+                _BRIDGE["cond"].notify_all()  # wake watch_screen so it can end
+            return self._send(200, {"ok": True, "streaming": active})
+        if self.path == "/frame":
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                payload = json.loads(self.rfile.read(length))
+                raw = base64.b64decode(payload["img"])
+            except (ValueError, KeyError, OSError, binascii.Error):
+                return self._send(400, {"error": "bad frame payload"})
+            with _BRIDGE["cond"]:
+                seq = (_BRIDGE["frame"]["seq"] + 1) if _BRIDGE["frame"] else 1
+                _BRIDGE["frame"] = {"img": raw, "fmt": payload.get("fmt", "jpeg"),
+                                    "seq": seq, "ts": time.time()}
+                _BRIDGE["streaming"] = True
+                _BRIDGE["cond"].notify_all()  # wake a waiting watch_screen
+            # the ACK the extension shows the user: HTTP 200 + the frame's seq
+            return self._send(200, {"ok": True, "seq": seq})
+        return self._send(404, {"error": "not found"})
 
 
 def _push(kind: str, text: str) -> int:
@@ -196,6 +227,48 @@ def read_screen():
     img = Image(data=fr["img"], format=fr["fmt"])
     # Return the image plus a short caption so the AI knows the frame's age/seq.
     return [f"frame #{fr['seq']}, {age:.1f}s old:", img]
+
+
+@mcp.tool()
+def watch_screen(timeout_seconds: int = 45):
+    """
+    Block until the NEXT new frame arrives, then return it as an image — an async
+    long-poll for live monitoring. Call it repeatedly in a loop: each call waits
+    server-side for a fresh frame instead of busy-polling, so it's efficient and
+    near-real-time. It returns one of:
+      • the next frame (image) when one arrives — read the console off it;
+      • "STREAM ENDED ..." when the user clicks Stop in the extension — STOP looping;
+      • "still streaming, no change ..." if nothing new within the timeout — loop again.
+
+    Args:
+        timeout_seconds: how long to wait for a new frame before returning the
+                         no-change note (clamped to 5..55s).
+    """
+    global _last_watch_seq
+    if not _BRIDGE["port"]:
+        return "Bridge not running."
+    timeout = max(5, min(int(timeout_seconds), 55))
+    deadline = time.time() + timeout
+    with _BRIDGE["cond"]:
+        while True:
+            fr = _BRIDGE["frame"]
+            streaming = _BRIDGE["streaming"]
+            if fr and fr["seq"] > _last_watch_seq:
+                _last_watch_seq = fr["seq"]
+                age = time.time() - fr["ts"]
+                return [f"frame #{fr['seq']}, {age:.1f}s old:",
+                        Image(data=fr["img"], format=fr["fmt"])]
+            if not streaming:
+                if fr is not None:
+                    return ("STREAM ENDED — the user stopped the capture in the "
+                            "extension. Stop looping / watching.")
+                return ("No stream yet — ask the user to frame the console and click "
+                        "Start in the screenscope extension, then call watch_screen again.")
+            remaining = deadline - time.time()
+            if remaining <= 0:
+                return (f"still streaming, no change in {timeout}s (console idle). "
+                        "Call watch_screen again to keep following.")
+            _BRIDGE["cond"].wait(remaining)
 
 
 @mcp.tool()

@@ -22,6 +22,9 @@
   white-space: nowrap;
 }
 #ss-bar-title { color: #e9d5ff; font: 600 11px ui-monospace, "Cascadia Mono", Consolas, monospace; letter-spacing: .3px; }
+#ss-ack { color: #7c6b90; font: 600 10px ui-monospace, Consolas, monospace; margin-left: 2px; }
+#ss-ack.ss-flash { color: #35e06a; animation: ssAck .55s ease-out; }
+@keyframes ssAck { from { text-shadow: 0 0 10px #35e06a; } to { text-shadow: none; } }
 #ss-bar button {
   color: #e9d5ff; background: #2a1b40; border: 1px solid #4a3568; border-radius: 6px;
   padding: 1px 7px; font: 600 11px ui-monospace, Consolas, monospace; cursor: pointer;

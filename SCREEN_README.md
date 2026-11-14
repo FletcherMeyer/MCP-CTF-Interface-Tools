@@ -23,9 +23,16 @@ offline. Nothing leaves your machine: the bridge is `127.0.0.1` only, token-gate
 | Tool | Purpose |
 |------|---------|
 | `bridge_status()` | URL + token to paste into the extension. |
-| `read_screen()` | Returns the **latest captured frame as an image** (with its age/seq). Read the console text off it; call repeatedly to follow live. |
+| `watch_screen(timeout?)` | **Blocks** until the next new frame, then returns it as an image — an async long-poll. Loop on it to follow live; it returns `"STREAM ENDED"` when the user clicks **Stop**, and a no-change note on timeout. |
+| `read_screen()` | Non-blocking: returns the latest frame right now (a one-off look). |
 | `say(text)` | Show an interpretation/update in the extension's panel. |
 | `ask(text)` | Ask the user to do something on the console (shown in the panel). |
+
+**ACK / streaming model:** every frame the extension POSTs is acknowledged
+synchronously by the bridge (HTTP 200 + a sequence number), and the extension shows
+the user a live **"✓ sent N"** count in the capture-box bar — so they can see data is
+flowing. **Start** marks the stream active; **Stop** ends it, which makes a blocked
+`watch_screen` return `STREAM ENDED` so your loop knows to finish.
 
 ## Typical flow
 
